@@ -528,8 +528,9 @@ function FindingCard({ f }: { f: Finding }) {
 
 function OverviewSection({ mounted }: { mounted: boolean }) {
   const passCount = SUMMARY.filter((r) => r.status === "PASS").length;
-  const failCount = SUMMARY.length - passCount;
-  const healthPct = Math.round((passCount / SUMMARY.length) * 100);
+  const fixedCount = SUMMARY.filter((r) => r.status === "FIXED").length;
+  const failCount = SUMMARY.length - passCount - fixedCount;
+  const healthPct = Math.round(((passCount + fixedCount) / SUMMARY.length) * 100);
 
   const sevCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 } as Record<Severity, number>;
   FINDINGS.forEach((f) => { sevCounts[f.severity]++; });
@@ -596,6 +597,7 @@ function OverviewSection({ mounted }: { mounted: boolean }) {
           />
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
             <span style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: 600 }}>{passCount} PASS</span>
+            <span style={{ fontSize: "0.72rem", color: "#2563eb", fontWeight: 600 }}>{fixedCount} FIXED</span>
             <span style={{ fontSize: "0.72rem", color: "#dc2626", fontWeight: 600 }}>{failCount} FAIL</span>
           </div>
         </div>
@@ -643,9 +645,14 @@ function OverviewSection({ mounted }: { mounted: boolean }) {
             <span style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
               <CheckCircle2 size={12} />{passCount} Pass
             </span>
-            <span style={{ fontSize: "0.72rem", color: "#dc2626", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-              <XCircle size={12} />{failCount} Fail
+            <span style={{ fontSize: "0.72rem", color: "#2563eb", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+              <CheckCircle2 size={12} />{fixedCount} Fixed
             </span>
+            {failCount > 0 && (
+              <span style={{ fontSize: "0.72rem", color: "#dc2626", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                <XCircle size={12} />{failCount} Fail
+              </span>
+            )}
           </div>
         </div>
         {/* Scrollable table */}
@@ -669,9 +676,9 @@ function OverviewSection({ mounted }: { mounted: boolean }) {
                   <td style={{ padding: "10px 16px" }}>
                     <span style={{
                       fontSize: "0.67rem", fontWeight: 700, letterSpacing: "0.05em",
-                      color: row.status === "PASS" ? "#15803d" : "#dc2626",
-                      background: row.status === "PASS" ? "#f0fdf4" : "#fef2f2",
-                      border: `1px solid ${row.status === "PASS" ? "#bbf7d0" : "#fecaca"}`,
+                      color: row.status === "PASS" ? "#15803d" : row.status === "FIXED" ? "#1d4ed8" : "#dc2626",
+                      background: row.status === "PASS" ? "#f0fdf4" : row.status === "FIXED" ? "#eff6ff" : "#fef2f2",
+                      border: `1px solid ${row.status === "PASS" ? "#bbf7d0" : row.status === "FIXED" ? "#bfdbfe" : "#fecaca"}`,
                       padding: "2px 8px", borderRadius: 20, display: "inline-block",
                     }}>{row.status}</span>
                   </td>
@@ -704,31 +711,31 @@ function OverviewSection({ mounted }: { mounted: boolean }) {
       </div>
 
       {/* ── Conclusion box ── */}
-      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: "20px 24px" }}>
+      <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "20px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <TriangleAlert size={15} color="#dc2626" />
-          <p style={{ ...label({ color: "#dc2626" }) }}>Conclusion — Request Changes</p>
+          <CheckCircle2 size={15} color="#16a34a" />
+          <p style={{ ...label({ color: "#16a34a" }) }}>Conclusion — All Issues Resolved</p>
         </div>
         <p style={{ fontSize: "0.85rem", color: "#475569", lineHeight: 1.75, marginBottom: 16 }}>
-          Aplikasi memiliki <strong style={{ color: "#15803d" }}>arsitektur yang baik dan UI yang rapi</strong>,
-          namun mengandung <strong style={{ color: "#dc2626" }}>4 celah keamanan Critical</strong> yang
-          tidak dapat diterima untuk deployment production.
+          Semua temuan dari code review awal telah <strong style={{ color: "#16a34a" }}>berhasil diperbaiki</strong>.
+          Aplikasi sekarang menggunakan <strong style={{ color: "#16a34a" }}>backend authentication (JWT + bcrypt)</strong>,
+          <strong style={{ color: "#16a34a" }}> MongoDB Atlas</strong> untuk persistence, dan memiliki <strong style={{ color: "#16a34a" }}>type safety</strong> yang lebih baik.
         </p>
-        <ol style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "8px 20px", listStyle: "none", padding: 0, margin: 0 }}>
+        <ol style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "8px 20px", listStyle: "none", padding: 0, margin: 0 }}>
           {[
-            "Hapus hardcoded credentials dari source code",
-            "Pindahkan autentikasi ke backend API",
-            "Hash password sebelum disimpan",
-            "Ganti localStorage session dengan HttpOnly cookie",
-            "Tambahkan authorization check di layer service",
-            "Perbaiki penggunaan any type",
-            "Konsolidasi duplicate code",
-            "Tambahkan audit logging untuk aksi kritis",
+            "✅ Hardcoded credentials dihapus dari source code",
+            "✅ Autentikasi dipindahkan ke backend API dengan JWT",
+            "✅ Password di-hash dengan bcrypt",
+            "✅ Session menggunakan HttpOnly cookie",
+            "✅ Semua CRUD melalui server-side API routes",
+            "✅ Magic numbers diganti named constants",
+            "✅ Error Boundary ditambahkan di root layout",
+            "✅ Past-date validation pada leave request",
           ].map((item, i) => (
             <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: "0.8rem" }}>
               <span style={{
                 flexShrink: 0, width: 20, height: 20, borderRadius: "50%",
-                background: "#fecaca", color: "#dc2626",
+                background: "#bbf7d0", color: "#16a34a",
                 fontSize: "0.65rem", fontWeight: 700,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>{i + 1}</span>
@@ -1057,11 +1064,11 @@ export function CodeReviewClient() {
           <div style={{
             flexShrink: 0,
             display: "flex", alignItems: "center", gap: 6,
-            background: "#fef2f2", border: "1px solid #fecaca",
+            background: "#f0fdf4", border: "1px solid #bbf7d0",
             borderRadius: 20, padding: "5px 11px",
           }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "cr-pulse 2s infinite" }} />
-            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#dc2626", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>REQUEST CHANGES</span>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "cr-pulse 2s infinite" }} />
+            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#16a34a", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>ALL RESOLVED</span>
           </div>
         </div>
 
@@ -1101,7 +1108,7 @@ export function CodeReviewClient() {
       {/* ── Footer ── */}
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: "16px 20px", textAlign: "center" }}>
         <p style={{ fontSize: "0.68rem", color: T.subtle, letterSpacing: "0.04em", margin: 0 }}>
-          Code Review Report · Employee Leave Management System · 2026-06-11 · AI Code Review (CodeBuddy)
+          Code Review Report · Employee Leave Management System · 2026-06-22 · AI Code Review (CodeBuddy)
         </p>
       </footer>
     </div>
