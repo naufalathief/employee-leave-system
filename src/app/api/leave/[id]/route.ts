@@ -45,11 +45,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (status === "APPROVED") {
       // Senior Staff approving a PENDING request → becomes CHECKED, not APPROVED
       if (approverPosition === "Senior Staff" && leave.status === "PENDING") {
-        // Senior Staff can only CHECK, not fully approve
         leave.status = "CHECKED";
         leave.checkedById = approverEmployeeId;
 
-        // If a manager ID was provided, forward to that manager
         if (forwardToManagerId) {
           leave.approverId = forwardToManagerId;
           leave.finalApproverId = forwardToManagerId;
@@ -74,47 +72,45 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         });
       }
 
-      // Manager/Director approving (either PENDING or CHECKED) → APPROVED
-      if (["Manager", "Director"].includes(approverPosition) || !approverEmployeeId) {
-        // Handle ANNUAL leave balance deduction
-        if (leave.type === "ANNUAL" && previousStatus !== "APPROVED") {
-          const employee = await Employee.findById(leave.employeeId);
-          if (!employee) {
-            return NextResponse.json({ error: "Employee not found" }, { status: 404 });
-          }
-
-          const days = countDays(leave.startDate, leave.endDate);
-
-          if (employee.leaveBalance < days) {
-            return NextResponse.json(
-              { error: `Insufficient leave balance. Required: ${days} days, Available: ${employee.leaveBalance} days` },
-              { status: 400 }
-            );
-          }
-
-          employee.leaveBalance -= days;
-          await employee.save();
+      // Everyone else → full APPROVED (Manager, Director, Admin, or fallback)
+      // Deduct ANNUAL leave balance
+      if (leave.type === "ANNUAL" && previousStatus !== "APPROVED") {
+        const employee = await Employee.findById(leave.employeeId);
+        if (!employee) {
+          return NextResponse.json({ error: "Employee not found" }, { status: 404 });
         }
 
-        leave.status = "APPROVED";
-        leave.finalApproverId = approverEmployeeId || leave.approverId;
-        await leave.save();
+        const days = countDays(leave.startDate, leave.endDate);
 
-        return NextResponse.json({
-          leave: {
-            id: leave._id.toString(),
-            employeeId: leave.employeeId,
-            approverId: leave.approverId,
-            checkedById: leave.checkedById,
-            finalApproverId: leave.finalApproverId,
-            type: leave.type,
-            startDate: leave.startDate,
-            endDate: leave.endDate,
-            reason: leave.reason,
-            status: leave.status,
-          },
-        });
+        if (employee.leaveBalance < days) {
+          return NextResponse.json(
+            { error: `Insufficient leave balance. Required: ${days} days, Available: ${employee.leaveBalance} days` },
+            { status: 400 }
+          );
+        }
+
+        employee.leaveBalance -= days;
+        await employee.save();
       }
+
+      leave.status = "APPROVED";
+      leave.finalApproverId = approverEmployeeId || leave.approverId;
+      await leave.save();
+
+      return NextResponse.json({
+        leave: {
+          id: leave._id.toString(),
+          employeeId: leave.employeeId,
+          approverId: leave.approverId,
+          checkedById: leave.checkedById,
+          finalApproverId: leave.finalApproverId,
+          type: leave.type,
+          startDate: leave.startDate,
+          endDate: leave.endDate,
+          reason: leave.reason,
+          status: leave.status,
+        },
+      });
     }
 
     // --- REJECTION ---

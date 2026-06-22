@@ -112,7 +112,7 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
       <Link
         href={href}
         onClick={onClick}
-        title={collapsed ? label : undefined}
+        title={label}
         className={[
           "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150",
           collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5",
@@ -122,7 +122,12 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
         ].join(" ")}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>{label}</span>}
+        <span
+          className="overflow-hidden transition-all duration-300 whitespace-nowrap"
+          style={{ maxWidth: collapsed ? 0 : 200, opacity: collapsed ? 0 : 1 }}
+        >
+          {label}
+        </span>
       </Link>
     );
   };
@@ -131,75 +136,87 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
     <>
       {/* ── Desktop Sidebar ── */}
       <aside
-        className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 bg-white border-r border-slate-200 transition-all duration-300 ease-in-out ${
+        className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 bg-white border-r border-slate-200 transition-[width] duration-300 ease-in-out ${
           collapsed ? "md:w-[68px]" : "md:w-64"
         }`}
       >
         {/* Brand — click to toggle collapse */}
-        <div className="flex h-16 items-center justify-between px-3 border-b border-slate-100">
+        <div className="flex h-16 items-center px-3 border-b border-slate-100">
           <button
             onClick={onToggleCollapse}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={`flex items-center gap-3 overflow-hidden rounded-lg px-1 py-1 transition-colors hover:bg-slate-100 ${collapsed ? "justify-center w-full" : ""}`}
+            className="flex items-center gap-3 overflow-hidden rounded-lg px-1 py-1 transition-colors hover:bg-slate-100 w-full"
           >
             <div className="w-8 h-8 rounded-lg bg-[#1e293b] flex items-center justify-center shrink-0">
               <FileCode2 className="h-4 w-4 text-white" />
             </div>
-            {!collapsed && (
-              <div className="min-w-0 text-left">
-                <p className="text-sm font-bold tracking-tight text-[#0f172a] leading-tight truncate">
-                  Leave System
-                </p>
-                <p className="text-[10px] text-slate-400 leading-tight tracking-wide">
-                  Management Portal
-                </p>
-              </div>
-            )}
+            <div
+              className="min-w-0 text-left overflow-hidden transition-all duration-300"
+              style={{ maxWidth: collapsed ? 0 : 160, opacity: collapsed ? 0 : 1 }}
+            >
+              <p className="text-sm font-bold tracking-tight text-[#0f172a] leading-tight truncate whitespace-nowrap">
+                Leave System
+              </p>
+              <p className="text-[10px] text-slate-400 leading-tight tracking-wide whitespace-nowrap">
+                Management Portal
+              </p>
+            </div>
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
-          {!collapsed && (
-            <p className="px-3 mb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+        <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
+          <div
+            className="overflow-hidden transition-all duration-300 mb-2"
+            style={{ maxHeight: collapsed ? 0 : 24, opacity: collapsed ? 0 : 1 }}
+          >
+            <p className="px-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap">
               Navigation
             </p>
-          )}
+          </div>
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
         </nav>
 
         {/* User section */}
-        <div className="px-2 py-3 border-t border-slate-100">
+        <div className="px-2 py-3 border-t border-slate-100 overflow-hidden">
 
           {/* User info */}
-          {!collapsed && (
+          <div
+            className="overflow-hidden transition-all duration-300"
+            style={{ maxHeight: collapsed ? 0 : 60, opacity: collapsed ? 0 : 1 }}
+          >
             <div className="flex items-center gap-3 px-3 py-2 mb-1">
               <div className="w-8 h-8 rounded-full bg-[#1e293b] flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-white">{initials}</span>
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#0f172a] truncate leading-tight">
+                <p className="text-sm font-semibold text-[#0f172a] truncate leading-tight whitespace-nowrap">
                   {session?.username ?? "—"}
                 </p>
-                <p className="text-[10px] text-slate-400 leading-tight tracking-wide uppercase">
+                <p className="text-[10px] text-slate-400 leading-tight tracking-wide uppercase whitespace-nowrap">
                   {session?.role ?? "—"}
                 </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Logout */}
           <button
             onClick={handleLogout}
-            title={collapsed ? "Logout" : undefined}
+            title="Logout"
             className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors duration-150 ${
               collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
             }`}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && "Logout"}
+            <span
+              className="overflow-hidden transition-all duration-300 whitespace-nowrap"
+              style={{ maxWidth: collapsed ? 0 : 100, opacity: collapsed ? 0 : 1 }}
+            >
+              Logout
+            </span>
           </button>
         </div>
       </aside>
