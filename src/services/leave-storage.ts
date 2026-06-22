@@ -13,7 +13,6 @@ export const LeaveStorageService = {
   },
 
   async getById(id: string): Promise<LeaveRequest | undefined> {
-    // Fetch all and find — there's no single-GET route needed yet
     const all = await this.getAll();
     return all.find((r) => r.id === id);
   },
@@ -32,18 +31,23 @@ export const LeaveStorageService = {
     return data.leave;
   },
 
-  async updateStatus(id: string, status: LeaveStatus): Promise<LeaveRequest | null> {
+  async updateStatus(
+    id: string,
+    status: LeaveStatus,
+    approverEmployeeId?: string,
+    forwardToManagerId?: string
+  ): Promise<{ leave: LeaveRequest | null; error?: string; message?: string }> {
     try {
       const res = await fetch(`/api/leave/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, approverEmployeeId, forwardToManagerId }),
       });
-      if (!res.ok) return null;
       const data = await res.json();
-      return data.leave ?? null;
+      if (!res.ok) return { leave: null, error: data.error ?? "Failed to update status" };
+      return { leave: data.leave ?? null, message: data.message };
     } catch {
-      return null;
+      return { leave: null, error: "Network error" };
     }
   },
 
@@ -76,6 +80,7 @@ export const LeaveStorageService = {
     const all = await this.getAll();
     return {
       pending: all.filter((r) => r.status === "PENDING").length,
+      checked: all.filter((r) => r.status === "CHECKED").length,
       approved: all.filter((r) => r.status === "APPROVED").length,
       rejected: all.filter((r) => r.status === "REJECTED").length,
     };

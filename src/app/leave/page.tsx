@@ -20,6 +20,7 @@ import { EmployeeStorageService } from "@/services/employee-storage";
 const STATUS_OPTIONS = [
   { value: "ALL", label: "All Status" },
   { value: "PENDING", label: "Pending" },
+  { value: "CHECKED", label: "Checked" },
   { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
 ];
@@ -31,6 +32,7 @@ export default function LeavePage() {
     setStatusFilter,
     approveRequest,
     rejectRequest,
+    currentEmployee,
   } = useLeaveRequests();
 
   const [isApproverOnly, setIsApproverOnly] = useState(false);
@@ -40,7 +42,7 @@ export default function LeavePage() {
       const session = await AuthStorageService.getSession();
       if (session?.role === "EMPLOYEE" && session?.employeeId) {
         const emp = await EmployeeStorageService.getById(session.employeeId);
-        if (emp && ["Manager", "Director"].includes(emp.position)) {
+        if (emp && ["Manager", "Director", "Senior Staff"].includes(emp.position)) {
           setIsApproverOnly(true);
         }
       }
@@ -92,6 +94,7 @@ export default function LeavePage() {
           leaveRequests={leaveRequests}
           onApprove={approveRequest}
           onReject={rejectRequest}
+          currentEmployee={currentEmployee}
         />
       </div>
     </AppLayout>

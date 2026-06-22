@@ -90,12 +90,30 @@ export function LeaveForm({ onSubmit, isSubmitting = false }: LeaveFormProps) {
     onSubmit(data);
   };
 
-  // Eligible approvers: senior positions, excluding current employee
-  const approvers = employees.filter(
-    (emp) =>
-      ["Senior Staff", "Team Lead", "Manager", "Director"].includes(emp.position) &&
-      emp.id !== (session?.role === "EMPLOYEE" ? session?.employeeId : undefined)
-  );
+  // Eligible approvers based on current employee's position
+  const currentEmpPosition = employees.find(
+    (e) => e.id === (session?.role === "EMPLOYEE" ? session?.employeeId : undefined)
+  )?.position ?? "";
+
+  const approvers = employees.filter((emp) => {
+    // Exclude self
+    if (emp.id === (session?.role === "EMPLOYEE" ? session?.employeeId : undefined)) return false;
+
+    if (currentEmpPosition === "Junior Staff" || currentEmpPosition === "Intern") {
+      // Junior Staff can send to Senior Staff or Manager/Director
+      return ["Senior Staff", "Manager", "Director"].includes(emp.position);
+    } else if (currentEmpPosition === "Senior Staff") {
+      // Senior Staff can only send to Manager/Director
+      return ["Manager", "Director"].includes(emp.position);
+    }
+    // For other positions or admin, show all potential approvers
+    return ["Senior Staff", "Team Lead", "Manager", "Director"].includes(emp.position);
+  });
+
+  // Compute selected approver display label
+  const watchedApproverId = watch("approverId");
+  const selectedApproverLabel = approvers.find((e) => e.id === watchedApproverId);
+
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -180,7 +198,11 @@ export function LeaveForm({ onSubmit, isSubmitting = false }: LeaveFormProps) {
                       id="approverId"
                       className={errors.approverId ? "border-destructive" : "border-slate-200"}
                     >
-                      <SelectValue placeholder="Select an approver" />
+                      <SelectValue placeholder="Select an approver">
+                        {selectedApproverLabel
+                          ? `${selectedApproverLabel.name} — ${selectedApproverLabel.position}`
+                          : undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {approvers.length === 0 ? (

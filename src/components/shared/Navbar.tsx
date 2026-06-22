@@ -30,7 +30,7 @@ export function Navbar() {
       setSession(s);
       if (s?.role === "EMPLOYEE" && s.employeeId) {
         const emp = await EmployeeStorageService.getById(s.employeeId);
-        if (emp && ["Manager", "Director"].includes(emp.position)) {
+        if (emp && ["Manager", "Director", "Senior Staff"].includes(emp.position)) {
           setIsApproverOnly(true);
         }
       }
@@ -59,7 +59,7 @@ export function Navbar() {
     } else if (session?.role === "EMPLOYEE") {
       base.push({
         href: "/leave",
-        label: isApproverOnly ? "Leave Approvals" : "My Leaves",
+        label: isApproverOnly ? "Leave Approvals" : "Leave Requests",
         icon: CalendarDays,
       });
     }

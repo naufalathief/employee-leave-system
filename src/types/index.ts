@@ -9,13 +9,15 @@ export type Employee = {
   leaveBalance?: number;
 };
 
-export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type LeaveStatus = "PENDING" | "CHECKED" | "APPROVED" | "REJECTED";
 export type LeaveType = "ANNUAL" | "SICK" | "MATERNITY" | "UNPAID";
 
 export type LeaveRequest = {
   id: string;
   employeeId: string;
   approverId: string;
+  checkedById?: string;
+  finalApproverId?: string;
   type: LeaveType;
   startDate: string;
   endDate: string;

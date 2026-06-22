@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
       id: l._id.toString(),
       employeeId: l.employeeId,
       approverId: l.approverId,
+      checkedById: l.checkedById ?? undefined,
+      finalApproverId: l.finalApproverId ?? undefined,
       type: l.type,
       startDate: l.startDate,
       endDate: l.endDate,

@@ -24,33 +24,40 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, CalendarDays } from "lucide-react";
+import { CheckCircle2, XCircle, CalendarDays, ArrowRight } from "lucide-react";
 
 interface LeaveTableProps {
   leaveRequests: LeaveRequest[];
-  onApprove: (id: string) => void;
+  onApprove: (id: string, forwardToManagerId?: string) => void;
   onReject: (id: string) => void;
+  currentEmployee?: Employee | null;
 }
 
-export function LeaveTable({ leaveRequests, onApprove, onReject }: LeaveTableProps) {
+export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee }: LeaveTableProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
-
   const [session, setSession] = useState<any>(null);
+  const [selectedManagerId, setSelectedManagerId] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function loadData() {
-      const [data, session] = await Promise.all([
+      const [data, sess] = await Promise.all([
         EmployeeStorageService.getAll(),
         (await import("@/services/auth-storage")).AuthStorageService.getSession(),
       ]);
       setEmployees(data);
-      setSession(session);
+      setSession(sess);
     }
     loadData();
   }, []);
 
-  // Performance Optimization: useMemo so we don't recalculate the map on every re-render
   const employeeMap = useMemo(() => {
     const map: Record<string, Employee> = {};
     employees.forEach((emp) => {
@@ -63,14 +70,38 @@ export function LeaveTable({ leaveRequests, onApprove, onReject }: LeaveTablePro
     return employeeMap[employeeId]?.name ?? "Unknown Employee";
   };
 
+  const managers = employees.filter((emp) => ["Manager", "Director"].includes(emp.position));
+
   const isAdmin = session?.role === "ADMIN";
+  const isSeniorStaff = currentEmployee?.position === "Senior Staff";
 
   const canApprove = (request: LeaveRequest) => {
     if (isAdmin) return true;
-    return request.approverId === session?.employeeId;
+    if (request.approverId === session?.employeeId) return true;
+    return false;
+  };
+
+  const canActOn = (request: LeaveRequest) => {
+    if (!canApprove(request)) return false;
+    if (isSeniorStaff && request.status === "PENDING") return true;
+    if (["Manager", "Director"].includes(currentEmployee?.position ?? "")) {
+      return request.status === "PENDING" || request.status === "CHECKED";
+    }
+    if (isAdmin) return request.status === "PENDING" || request.status === "CHECKED";
+    return false;
   };
 
   const showActionsColumn = isAdmin || leaveRequests.some(canApprove);
+
+  const handleApprove = (requestId: string) => {
+    if (isSeniorStaff) {
+      const managerId = selectedManagerId[requestId];
+      if (!managerId) return;
+      onApprove(requestId, managerId);
+    } else {
+      onApprove(requestId);
+    }
+  };
 
   if (leaveRequests.length === 0) {
     return (
@@ -113,7 +144,14 @@ export function LeaveTable({ leaveRequests, onApprove, onReject }: LeaveTablePro
                 </Badge>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {request.approverId ? getEmployeeName(request.approverId) : "System/Admin"}
+                <div>
+                  {request.approverId ? getEmployeeName(request.approverId) : "System/Admin"}
+                  {request.checkedById && (
+                    <div className="text-xs text-blue-600 mt-0.5">
+                      Checked by: {getEmployeeName(request.checkedById)}
+                    </div>
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-muted-foreground">{formatDate(request.startDate)}</TableCell>
               <TableCell className="text-muted-foreground">{formatDate(request.endDate)}</TableCell>
@@ -130,42 +168,112 @@ export function LeaveTable({ leaveRequests, onApprove, onReject }: LeaveTablePro
               </TableCell>
               {showActionsColumn && (
                 <TableCell className="text-right">
-                  {canApprove(request) && request.status === "PENDING" ? (
+                  {canActOn(request) ? (
                     <div className="flex items-center justify-end gap-1">
-                      <AlertDialog>
-                        <AlertDialogTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            />
-                          }
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Approve
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Approve Leave Request</AlertDialogTitle>
-                            <AlertDialogDescription className="text-muted-foreground">
-                              Are you sure you want to approve the leave request for{" "}
-                              <strong className="text-foreground">{getEmployeeName(request.employeeId)}</strong> from{" "}
-                              {formatDate(request.startDate)} to {formatDate(request.endDate)}?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => onApprove(request.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700"
+                      {/* Senior Staff: show forward-to-manager flow */}
+                      {isSeniorStaff && request.status === "PENDING" ? (
+                        <div className="flex items-center gap-1">
+                          <Select
+                            value={selectedManagerId[request.id] ?? ""}
+                            onValueChange={(v) =>
+                              setSelectedManagerId((prev) => ({ ...prev, [request.id]: v }))
+                            }
+                          >
+                            <SelectTrigger className="w-[130px] h-8 text-xs">
+                              <SelectValue placeholder="Select Manager">
+                                {selectedManagerId[request.id]
+                                  ? getEmployeeName(selectedManagerId[request.id])
+                                  : undefined}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {managers.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {m.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <AlertDialog>
+                            <AlertDialogTrigger
+                              render={
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  disabled={!selectedManagerId[request.id]}
+                                />
+                              }
                             >
-                              Approve
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <ArrowRight className="h-4 w-4 mr-1" />
+                              Check & Forward
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Check & Forward to Manager</AlertDialogTitle>
+                                <AlertDialogDescription className="text-muted-foreground">
+                                  This will mark the request as <strong className="text-blue-600">CHECKED</strong> and forward it to{" "}
+                                  <strong className="text-foreground">
+                                    {selectedManagerId[request.id] ? getEmployeeName(selectedManagerId[request.id]) : "Manager"}
+                                  </strong>{" "}
+                                  for final approval.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleApprove(request.id)}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  Check & Forward
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      ) : (
+                        /* Manager/Admin: standard approve */
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              />
+                            }
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Approve
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Approve Leave Request</AlertDialogTitle>
+                              <AlertDialogDescription className="text-muted-foreground">
+                                Are you sure you want to approve the leave request for{" "}
+                                <strong className="text-foreground">{getEmployeeName(request.employeeId)}</strong> from{" "}
+                                {formatDate(request.startDate)} to {formatDate(request.endDate)}?
+                                {request.status === "CHECKED" && (
+                                  <span className="block mt-1 text-blue-600">
+                                    This request was checked by {getEmployeeName(request.checkedById ?? "")}.
+                                  </span>
+                                )}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => onApprove(request.id)}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                Approve
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
 
+                      {/* Reject button - always available */}
                       <AlertDialog>
                         <AlertDialogTrigger
                           render={
