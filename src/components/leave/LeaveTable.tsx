@@ -217,14 +217,14 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
                               render={
                                 <Button
                                   variant="ghost"
-                                  size="sm"
-                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  size="icon"
+                                  title="Check & Forward"
+                                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                   disabled={!selectedManagerId[request.id]}
                                 />
                               }
                             >
-                              <ArrowRight className="h-4 w-4 mr-1" />
-                              Check & Forward
+                              <ArrowRight className="h-4 w-4" />
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
@@ -256,13 +256,13 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
                             render={
                               <Button
                                 variant="ghost"
-                                size="sm"
-                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                size="icon"
+                                title="Approve"
+                                className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                               />
                             }
                           >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Approve
+                            <CheckCircle2 className="h-4 w-4" />
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -297,13 +297,13 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
                           render={
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              size="icon"
+                              title="Reject"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             />
                           }
                         >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Reject
+                          <XCircle className="h-4 w-4" />
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>

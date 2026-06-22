@@ -12,8 +12,6 @@ import {
   LogOut,
   Menu,
   FileCode2,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -137,14 +135,18 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
           collapsed ? "md:w-[68px]" : "md:w-64"
         }`}
       >
-        {/* Brand */}
+        {/* Brand — click to toggle collapse */}
         <div className="flex h-16 items-center justify-between px-3 border-b border-slate-100">
-          <div className={`flex items-center gap-3 overflow-hidden ${collapsed ? "justify-center w-full" : ""}`}>
+          <button
+            onClick={onToggleCollapse}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`flex items-center gap-3 overflow-hidden rounded-lg px-1 py-1 transition-colors hover:bg-slate-100 ${collapsed ? "justify-center w-full" : ""}`}
+          >
             <div className="w-8 h-8 rounded-lg bg-[#1e293b] flex items-center justify-center shrink-0">
               <FileCode2 className="h-4 w-4 text-white" />
             </div>
             {!collapsed && (
-              <div className="min-w-0">
+              <div className="min-w-0 text-left">
                 <p className="text-sm font-bold tracking-tight text-[#0f172a] leading-tight truncate">
                   Leave System
                 </p>
@@ -153,7 +155,7 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
                 </p>
               </div>
             )}
-          </div>
+          </button>
         </div>
 
         {/* Nav */}
@@ -168,23 +170,8 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
           ))}
         </nav>
 
-        {/* Toggle + User section */}
+        {/* User section */}
         <div className="px-2 py-3 border-t border-slate-100">
-          {/* Collapse toggle */}
-          <button
-            onClick={onToggleCollapse}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="w-full flex items-center justify-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors duration-150 mb-2"
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="h-4 w-4 shrink-0" />
-            ) : (
-              <>
-                <PanelLeftClose className="h-4 w-4 shrink-0" />
-                <span className="text-xs">Collapse</span>
-              </>
-            )}
-          </button>
 
           {/* User info */}
           {!collapsed && (
