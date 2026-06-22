@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
     department: "",
@@ -42,20 +43,21 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      // Validate unique email
+      // Validate unique username
       const employees = await EmployeeStorageService.getAll();
-      const emailExists = employees.some(
-        (emp) => emp.email?.toLowerCase() === formData.email.toLowerCase()
+      const usernameExists = employees.some(
+        (emp) => emp.username?.toLowerCase() === formData.username.toLowerCase()
       );
 
-      if (emailExists) {
-        toast.error("Email is already registered");
+      if (usernameExists) {
+        toast.error("Username is already taken");
         setIsSubmitting(false);
         return;
       }
 
       const newEmployee: Omit<Employee, "id"> = {
         name: formData.name,
+        username: formData.username,
         email: formData.email,
         password: formData.password,
         department: formData.department,
@@ -95,14 +97,25 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              placeholder="e.g. johndoe"
+              value={formData.username}
+              onChange={handleChange}
+              required
+              minLength={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address (Optional)</Label>
             <Input
               id="email"
               type="email"
               placeholder="john.doe@example.com"
               value={formData.email}
               onChange={handleChange}
-              required
             />
           </div>
 

@@ -58,6 +58,7 @@ export function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Username</TableHead>
             <TableHead className="font-semibold">Department</TableHead>
             <TableHead className="font-semibold">Position</TableHead>
             <TableHead className="font-semibold text-right">Actions</TableHead>
@@ -67,6 +68,7 @@ export function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
           {employees.map((employee) => (
             <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors">
               <TableCell className="font-medium">{employee.name}</TableCell>
+              <TableCell className="text-muted-foreground font-mono text-sm">{employee.username}</TableCell>
               <TableCell>
                 <Badge variant="secondary">{employee.department}</Badge>
               </TableCell>

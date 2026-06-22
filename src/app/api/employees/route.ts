@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import { Employee } from "@/models/Employee";
+import { User } from "@/models/User";
 
 // GET /api/employees — list all employees
 export async function GET() {
@@ -11,6 +13,7 @@ export async function GET() {
     const result = employees.map((e) => ({
       id: e._id.toString(),
       name: e.name,
+      username: e.username ?? "",
       email: e.email ?? "",
       department: e.department,
       position: e.position,
@@ -24,29 +27,56 @@ export async function GET() {
   }
 }
 
-// POST /api/employees — create employee
+// POST /api/employees — create employee + user account
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, department, position, leaveBalance } = body;
+    const { name, username, email, password, department, position, leaveBalance } = body;
 
-    if (!name || !department || !position) {
-      return NextResponse.json({ error: "Name, department, and position are required" }, { status: 400 });
+    if (!name || !username || !password || !department || !position) {
+      return NextResponse.json(
+        { error: "Name, username, password, department, and position are required" },
+        { status: 400 }
+      );
     }
 
     await connectDB();
+
+    // Check if username already exists in User or Employee collection
+    const existingUser = await User.findOne({ username: username.toLowerCase().trim() });
+    if (existingUser) {
+      return NextResponse.json({ error: "Username already exists" }, { status: 409 });
+    }
+
+    const existingEmployee = await Employee.findOne({ username: username.toLowerCase().trim() });
+    if (existingEmployee) {
+      return NextResponse.json({ error: "Username already exists" }, { status: 409 });
+    }
+
+    // Create employee
     const employee = await Employee.create({
       name,
+      username: username.toLowerCase().trim(),
       email: email ?? "",
       department,
       position,
       leaveBalance: leaveBalance ?? 12,
     });
 
+    // Create user account for employee login
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.create({
+      username: username.toLowerCase().trim(),
+      password: hashedPassword,
+      role: "EMPLOYEE",
+      employeeId: employee._id.toString(),
+    });
+
     return NextResponse.json({
       employee: {
         id: employee._id.toString(),
         name: employee.name,
+        username: employee.username,
         email: employee.email,
         department: employee.department,
         position: employee.position,

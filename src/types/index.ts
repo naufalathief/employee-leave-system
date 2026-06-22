@@ -1,8 +1,9 @@
 export type Employee = {
   id: string;
   name: string;
+  username: string;
   email?: string;
-  password?: string;
+  password: string;
   department: string;
   position: string;
   leaveBalance?: number;

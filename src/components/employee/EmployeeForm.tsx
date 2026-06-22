@@ -41,6 +41,7 @@ export function EmployeeForm({
     resolver: zodResolver(employeeSchema),
     defaultValues: initialData || {
       name: "",
+      username: "",
       email: "",
       password: "",
       department: "",
@@ -88,6 +89,19 @@ export function EmployeeForm({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                placeholder="Enter username (no spaces)"
+                {...register("username")}
+                className={errors.username ? "border-destructive" : ""}
+              />
+              {errors.username && (
+                <p className="text-sm text-destructive">{errors.username.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email">Email Address (Optional)</Label>
               <Input
                 id="email"
@@ -102,7 +116,7 @@ export function EmployeeForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password (Optional)</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
