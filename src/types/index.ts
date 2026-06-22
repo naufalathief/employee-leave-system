@@ -3,7 +3,6 @@ export type Employee = {
   name: string;
   username: string;
   email?: string;
-  password: string;
   department: string;
   position: string;
   leaveBalance?: number;

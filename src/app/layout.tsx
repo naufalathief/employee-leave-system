@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ClientErrorBoundary } from "@/components/shared/ClientErrorBoundary";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -31,7 +32,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><ClientErrorBoundary>{children}</ClientErrorBoundary></body>
     </html>
   );
 }

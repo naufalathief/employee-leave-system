@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { leaveRequestSchema, type LeaveRequestFormData } from "@/validators/leave-validator";
 import { EmployeeStorageService } from "@/services/employee-storage";
 import { Employee } from "@/types";
+import { DEFAULT_ANNUAL_LEAVE_DAYS } from "@/constants";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -72,7 +73,7 @@ export function LeaveForm({ onSubmit, isSubmitting = false }: LeaveFormProps) {
   const handleFormSubmit = (data: LeaveRequestFormData) => {
     if (data.type === "ANNUAL") {
       const selectedEmp = employees.find((e) => e.id === data.employeeId);
-      const balance = selectedEmp?.leaveBalance ?? 12;
+      const balance = selectedEmp?.leaveBalance ?? DEFAULT_ANNUAL_LEAVE_DAYS;
       const daysRequested = countBusinessDays(data.startDate, data.endDate);
       if (daysRequested > balance) {
         toast.error(

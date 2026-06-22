@@ -19,7 +19,7 @@ const EmployeeSchema = new Schema<IEmployee>(
     email: { type: String, trim: true, lowercase: true, default: "" },
     department: { type: String, required: true, trim: true },
     position: { type: String, required: true, trim: true },
-    leaveBalance: { type: Number, default: 12, min: 0, max: 12 },
+    leaveBalance: { type: Number, default: 12, min: 0, max: 12 }, // DEFAULT_ANNUAL_LEAVE_DAYS
     leaveBalanceResetAt: { type: Date, default: () => new Date() },
   },
   { timestamps: true }

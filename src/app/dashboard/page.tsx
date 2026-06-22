@@ -7,6 +7,7 @@ import { EmployeeStorageService } from "@/services/employee-storage";
 import { LeaveStorageService } from "@/services/leave-storage";
 import { AuthStorageService } from "@/services/auth-storage";
 import { type DashboardStats, type AuthSession } from "@/types";
+import { DEFAULT_ANNUAL_LEAVE_DAYS } from "@/constants";
 import { Users, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 export default function DashboardPage() {
@@ -15,7 +16,7 @@ export default function DashboardPage() {
     pendingLeaves: 0,
     approvedLeaves: 0,
     rejectedLeaves: 0,
-    leaveBalance: 12,
+    leaveBalance: DEFAULT_ANNUAL_LEAVE_DAYS,
   });
 
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -33,7 +34,7 @@ export default function DashboardPage() {
           : LeaveStorageService.getAll(),
       ]);
 
-      let balance = 12;
+      let balance = DEFAULT_ANNUAL_LEAVE_DAYS;
       if (currentSession?.role === "EMPLOYEE" && currentSession?.employeeId) {
         const emp = employees.find((e) => e.id === currentSession.employeeId);
         if (emp) {

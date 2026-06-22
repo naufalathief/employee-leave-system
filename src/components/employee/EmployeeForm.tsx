@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DEPARTMENTS, POSITIONS } from "@/constants";
+import { DEPARTMENTS, POSITIONS, DEFAULT_ANNUAL_LEAVE_DAYS } from "@/constants";
 import { Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -46,7 +46,7 @@ export function EmployeeForm({
       password: "",
       department: "",
       position: "",
-      leaveBalance: 12,
+      leaveBalance: DEFAULT_ANNUAL_LEAVE_DAYS,
     },
   });
 

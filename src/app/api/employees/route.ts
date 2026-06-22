@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import { Employee } from "@/models/Employee";
+import { DEFAULT_ANNUAL_LEAVE_DAYS } from "@/constants";
 import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export async function GET() {
       email: e.email ?? "",
       department: e.department,
       position: e.position,
-      leaveBalance: e.leaveBalance ?? 12,
+      leaveBalance: e.leaveBalance ?? DEFAULT_ANNUAL_LEAVE_DAYS,
     }));
 
     return NextResponse.json({ employees: result });
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
       email: email ?? "",
       department,
       position,
-      leaveBalance: leaveBalance ?? 12,
+      leaveBalance: leaveBalance ?? DEFAULT_ANNUAL_LEAVE_DAYS,
     });
 
     // Create user account for employee login

@@ -14,7 +14,7 @@ const baseFields = {
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   department: z.string().min(1, "Department is required"),
   position: z.string().min(1, "Position is required"),
-  leaveBalance: z.number().min(0, "Leave balance cannot be negative").max(12, "Maximum annual leave balance is 12"),
+  leaveBalance: z.number().min(0, "Leave balance cannot be negative").max(12, "Maximum annual leave balance is 12"), // DEFAULT_ANNUAL_LEAVE_DAYS
 };
 
 // Create: password is required

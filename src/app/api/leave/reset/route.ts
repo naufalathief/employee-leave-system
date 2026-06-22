@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Employee } from "@/models/Employee";
+import { DEFAULT_ANNUAL_LEAVE_DAYS } from "@/constants";
 
 /**
  * POST /api/leave/reset — Reset annual leave balance for all employees.
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
         : 0;
 
       if (lastResetYear < currentYear) {
-        employee.leaveBalance = 12;
+        employee.leaveBalance = DEFAULT_ANNUAL_LEAVE_DAYS;
         employee.leaveBalanceResetAt = new Date();
         await employee.save();
         resetCount++;

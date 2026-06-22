@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import { Employee } from "@/models/Employee";
+import { DEFAULT_ANNUAL_LEAVE_DAYS } from "@/constants";
 import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
         email: employee.email ?? "",
         department: employee.department,
         position: employee.position,
-        leaveBalance: employee.leaveBalance ?? 12,
+        leaveBalance: employee.leaveBalance ?? DEFAULT_ANNUAL_LEAVE_DAYS,
       },
     });
   } catch (error) {
@@ -105,7 +106,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         email: employee.email ?? "",
         department: employee.department,
         position: employee.position,
-        leaveBalance: employee.leaveBalance ?? 12,
+        leaveBalance: employee.leaveBalance ?? DEFAULT_ANNUAL_LEAVE_DAYS,
       },
     });
   } catch (error) {

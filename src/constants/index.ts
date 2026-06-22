@@ -4,10 +4,7 @@ export const STORAGE_KEYS = {
   AUTH_SESSION: "els_auth_session",
 } as const;
 
-export const AUTH_CREDENTIALS = {
-  USERNAME: "admin",
-  PASSWORD: "admin123",
-} as const;
+export const DEFAULT_ANNUAL_LEAVE_DAYS = 12;
 
 export const DEPARTMENTS = [
   "Engineering",

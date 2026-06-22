@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/shared/AppLayout";
 import { EmployeeForm } from "@/components/employee/EmployeeForm";
 import { EmployeeStorageService } from "@/services/employee-storage";
 import { type EmployeeFormData } from "@/validators/employee-validator";
+import { DEFAULT_ANNUAL_LEAVE_DAYS } from "@/constants";
 import { toast } from "sonner";
 
 export default function EditEmployeePage({
@@ -29,7 +30,7 @@ export default function EditEmployeePage({
           password: "",
           department: employee.department,
           position: employee.position,
-          leaveBalance: employee.leaveBalance ?? 12,
+          leaveBalance: employee.leaveBalance ?? DEFAULT_ANNUAL_LEAVE_DAYS,
         });
       } else {
         setNotFound(true);

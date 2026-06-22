@@ -12,6 +12,13 @@ export const leaveRequestSchema = z
       .min(1, "Reason is required")
       .min(10, "Reason must be at least 10 characters"),
   })
+  .refine(
+    (data) => new Date(data.startDate) >= new Date(new Date().toISOString().split("T")[0]),
+    {
+      message: "Start date cannot be in the past",
+      path: ["startDate"],
+    }
+  )
   .refine((data) => new Date(data.endDate) > new Date(data.startDate), {
     message: "End date must be after start date",
     path: ["endDate"],
