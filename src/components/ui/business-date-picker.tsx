@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { DayPicker } from "react-day-picker";
-import { isBusinessDay, isHoliday, isWeekend, getHolidayName, countBusinessDays } from "@/lib/holidays";
+import { isBusinessDay, isHoliday, isWeekend, countBusinessDays } from "@/lib/holidays";
 import { cn } from "@/lib/utils";
 import { CalendarDays } from "lucide-react";
 import "react-day-picker/style.css";
@@ -27,21 +28,49 @@ export function BusinessDatePicker({
   error = false,
 }: BusinessDatePickerProps) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
 
   const selected = value ? new Date(value + "T00:00:00") : undefined;
 
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + window.scrollY + 4,
+      left: rect.left + window.scrollX,
+    });
+  }, []);
+
   useEffect(() => {
+    if (!open) return;
+    updatePosition();
+
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        triggerRef.current && !triggerRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     }
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
+
+    function handleScroll() {
+      updatePosition();
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open, updatePosition]);
 
   const handleDayClick = (day: Date) => {
     if (!isBusinessDay(day)) return;
@@ -61,7 +90,6 @@ export function BusinessDatePicker({
     });
   };
 
-  // Disable weekends and holidays
   const disabledMatcher = (date: Date) => {
     if (isWeekend(date)) return true;
     if (isHoliday(date)) return true;
@@ -70,8 +98,9 @@ export function BusinessDatePicker({
   };
 
   return (
-    <div className="relative" ref={containerRef}>
+    <>
       <button
+        ref={triggerRef}
         id={id}
         type="button"
         onClick={() => setOpen(!open)}
@@ -87,57 +116,64 @@ export function BusinessDatePicker({
         <CalendarDays className="h-4 w-4 text-muted-foreground" />
       </button>
 
-      {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 rounded-lg border border-slate-200 bg-white p-3 shadow-lg animate-in fade-in-0 zoom-in-95">
-          <DayPicker
-            mode="single"
-            selected={selected}
-            onSelect={(day) => day && handleDayClick(day)}
-            disabled={disabledMatcher}
-            modifiers={{
-              holiday: (date) => isHoliday(date),
-              weekend: (date) => isWeekend(date),
-            }}
-            modifiersClassNames={{
-              holiday: "rdp-holiday",
-              weekend: "rdp-weekend",
-            }}
-            showOutsideDays={false}
-            fixedWeeks={false}
-            classNames={{
-              root: "rdp-business",
-              months: "flex flex-col",
-              month_caption: "flex justify-center pt-1 relative items-center mb-2",
-              caption_label: "text-sm font-semibold text-[#0f172a]",
-              nav: "flex items-center gap-1",
-              button_previous: "absolute left-1 top-0 h-7 w-7 bg-transparent p-0 text-slate-500 hover:text-slate-900 inline-flex items-center justify-center rounded-md hover:bg-slate-100",
-              button_next: "absolute right-1 top-0 h-7 w-7 bg-transparent p-0 text-slate-500 hover:text-slate-900 inline-flex items-center justify-center rounded-md hover:bg-slate-100",
-              weekday: "text-muted-foreground text-[0.7rem] font-medium w-8 text-center",
-              day_button: "h-8 w-8 text-center text-sm p-0 font-normal rounded-md transition-colors",
-              selected: "bg-[#1e293b] text-white font-semibold rounded-md",
-              today: "bg-slate-100 font-semibold",
-              outside: "text-muted-foreground opacity-50",
-              disabled: "text-slate-300 cursor-not-allowed line-through",
-              hidden: "invisible",
-            }}
-            footer={
-              <div className="mt-2 pt-2 border-t border-slate-100">
-                <div className="flex items-center gap-3 text-[10px] text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-red-100 border border-red-200" />
-                    Holiday
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-slate-200" />
-                    Weekend
-                  </span>
+      {open && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={{ position: "absolute", top: pos.top, left: pos.left }}
+            className="z-[9999] rounded-lg border border-slate-200 bg-white p-3 shadow-lg animate-in fade-in-0 zoom-in-95"
+          >
+            <DayPicker
+              mode="single"
+              selected={selected}
+              onSelect={(day) => day && handleDayClick(day)}
+              disabled={disabledMatcher}
+              modifiers={{
+                holiday: (date) => isHoliday(date),
+                weekend: (date) => isWeekend(date),
+              }}
+              modifiersClassNames={{
+                holiday: "rdp-holiday",
+                weekend: "rdp-weekend",
+              }}
+              showOutsideDays={false}
+              fixedWeeks={false}
+              classNames={{
+                root: "rdp-business",
+                months: "flex flex-col",
+                month_caption: "flex justify-center pt-1 relative items-center mb-2",
+                caption_label: "text-sm font-semibold text-[#0f172a]",
+                nav: "flex items-center gap-1",
+                button_previous: "absolute left-1 top-0 h-7 w-7 bg-transparent p-0 text-slate-500 hover:text-slate-900 inline-flex items-center justify-center rounded-md hover:bg-slate-100",
+                button_next: "absolute right-1 top-0 h-7 w-7 bg-transparent p-0 text-slate-500 hover:text-slate-900 inline-flex items-center justify-center rounded-md hover:bg-slate-100",
+                weekday: "text-muted-foreground text-[0.7rem] font-medium w-8 text-center",
+                day_button: "h-8 w-8 text-center text-sm p-0 font-normal rounded-md transition-colors",
+                selected: "bg-[#1e293b] text-white font-semibold rounded-md",
+                today: "bg-slate-100 font-semibold",
+                outside: "text-muted-foreground opacity-50",
+                disabled: "text-slate-300 cursor-not-allowed line-through",
+                hidden: "invisible",
+              }}
+              footer={
+                <div className="mt-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-red-100 border border-red-200" />
+                      Holiday
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-slate-200" />
+                      Weekend
+                    </span>
+                  </div>
                 </div>
-              </div>
-            }
-          />
-        </div>
-      )}
-    </div>
+              }
+            />
+          </div>,
+          document.body
+        )
+      }
+    </>
   );
 }
 
