@@ -24,6 +24,9 @@ export default function EditEmployeePage({
       if (employee) {
         setInitialData({
           name: employee.name,
+          username: employee.username ?? "",
+          email: employee.email ?? "",
+          password: "",
           department: employee.department,
           position: employee.position,
           leaveBalance: employee.leaveBalance ?? 12,

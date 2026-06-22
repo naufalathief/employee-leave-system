@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { employeeSchema, type EmployeeFormData } from "@/validators/employee-validator";
+import { employeeSchema, employeeEditSchema, type EmployeeFormData } from "@/validators/employee-validator";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export function EmployeeForm({
     setValue,
     formState: { errors },
   } = useForm<EmployeeFormData>({
-    resolver: zodResolver(employeeSchema),
+    resolver: zodResolver(mode === "edit" ? employeeEditSchema : employeeSchema),
     defaultValues: initialData || {
       name: "",
       username: "",
@@ -116,11 +116,13 @@ export function EmployeeForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">
+                Password{mode === "edit" ? " (Leave blank to keep current)" : ""}
+              </Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter password (min 6 chars)"
+                placeholder={mode === "edit" ? "Leave blank to keep current password" : "Enter password (min 6 chars)"}
                 {...register("password")}
                 className={errors.password ? "border-destructive" : ""}
               />

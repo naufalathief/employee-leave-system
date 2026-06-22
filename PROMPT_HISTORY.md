@@ -354,3 +354,158 @@ npm run dev
   - OS & Editor: `.DS_Store`, `Thumbs.db`, `.idea/`, `.vscode/`
   - Debug logs
 - Verifikasi bahwa `atlas-credentials.env`, `.env.local`, dan `.env` semua terkena ignore rule
+
+---
+
+## Sesi 4 — Deployment ke Vercel & Penyesuaian Form
+
+### Prompt 20
+> *"saya ingin melanjutkan proses deployment saya yang terakhir sampai di push ke github repository. Bantu saya untuk rekap kembali status terakhir saya"*
+
+**Aksi yang dilakukan:**
+- Review seluruh repository: README.md, PROMPT_HISTORY.md, git status, git log, git remote
+- Menyusun rekap status deployment:
+  - ✅ Semua file sudah di-stage (`git add -A`)
+  - ❌ Belum di-commit
+  - ❌ Remote GitHub belum di-set
+  - ❌ Belum push ke GitHub
+  - ❌ Belum deploy ke Vercel
+
+---
+
+### Prompt 21
+> *"1" (Stage ulang file yang berubah + commit semua perubahan)*
+
+**Aksi yang dilakukan:**
+- `git add -A` — stage ulang file yang berubah setelah staging sebelumnya
+- `git commit -m "feat: Employee Leave Management System with MongoDB Atlas backend"` — 66 files changed, 10,017 insertions
+
+---
+
+### Prompt 22
+> *"https://github.com/naufalathief/employee-leave-system.git"*
+
+**Aksi yang dilakukan:**
+- `git remote add origin https://github.com/naufalathief/employee-leave-system.git`
+- `git branch -M main` — rename branch master → main
+- `git push -u origin main` — push gagal (hang karena autentikasi)
+- Instruksi push manual diberikan ke user
+
+---
+
+### Prompt 23
+> *"ini dari tadi belum prompt nya chat, dan saya cek repo nya juga belum ada perubahan, coba pastikan kembali status repository nya"*
+
+**Masalah:**
+- `git push` hang karena menunggu autentikasi GitHub (credential helper belum setup)
+
+**Aksi yang dilakukan:**
+- Kill background task yang hang
+- Verifikasi status: remote sudah terset, commit sudah ada, working tree clean
+- Instruksi push manual dari terminal user agar autentikasi bisa muncul
+
+---
+
+### Prompt 24
+> *"oke sekarang sudah bisa, tolong pastikan kembali apakah ini sudah layak untuk dilakukan deployment ke vercel"*
+
+**Aksi yang dilakukan:**
+- Deployment readiness check:
+  - ✅ Push ke GitHub berhasil
+  - ✅ Tidak ada hardcoded `localhost` di source code
+  - ✅ API calls pakai relative path (`/api/...`)
+  - ✅ MongoDB connection pakai global caching (aman untuk serverless)
+  - ✅ Cookie `secure: true` otomatis di production
+  - ✅ `package.json` punya script `build`
+  - ✅ Next.js — Vercel native support
+- Verdict: **SIAP DEPLOY**
+- Panduan environment variables yang perlu di-set di Vercel
+
+---
+
+### Prompt 25
+> *"Boleh, saya ingin tau untuk Environment Variables nya, value nya apa. Dan untuk Poin 3 itu bagaimana prosedure nya"*
+
+**Aksi yang dilakukan:**
+- Menampilkan nilai environment variables dari `.env.local`:
+  - `MONGODB_URI` — connection string MongoDB Atlas
+  - `JWT_SECRET` — secret key untuk JWT
+- Panduan langkah-langkah whitelist IP `0.0.0.0/0` di MongoDB Atlas Network Access
+- Penjelasan kenapa whitelist diperlukan (Vercel serverless = dynamic IP)
+
+---
+
+### Prompt 26
+> *"123.231.245.182/32 (includes your current IP address) — hasil yang diberikan itu otomatis terbentuk seperti ini chat, apakah sudah sesuai?"*
+
+**Aksi yang dilakukan:**
+- Menjelaskan bahwa `123.231.245.182/32` hanya whitelist IP komputer user, bukan untuk Vercel
+- Instruksi: klik **"ALLOW ACCESS FROM ANYWHERE"** → otomatis terisi `0.0.0.0/0`
+- Penjelasan perbedaan IP spesifik vs `0.0.0.0/0`
+
+---
+
+### Prompt 27
+> *"oke sudah saya tambahkan, lalu apa lagi yang perlu saya lakukan?"*
+
+**Aksi yang dilakukan:**
+- Panduan step-by-step import & deploy di Vercel:
+  1. Login Vercel dengan akun GitHub
+  2. Add New Project → Import repo `employee-leave-system`
+  3. Framework preset otomatis Next.js
+  4. Tambah Environment Variables (`MONGODB_URI`, `JWT_SECRET`)
+  5. Klik Deploy
+- User berhasil deploy ke Vercel
+
+---
+
+### Prompt 28
+> *"Oke sudah terdeploy, namun saya ada concern terkait Mongo DB nya, bagaimana cara saya melakukan pengecekan terkait database nya di mongoDB?"*
+
+**Aksi yang dilakukan:**
+- Menjelaskan MongoDB Atlas bersifat **lazy** — collections baru terbentuk saat data pertama dimasukkan
+- Panduan cek database: MongoDB Atlas → Browse Collections
+- Instruksi seed admin user di production via browser console:
+  ```javascript
+  fetch('/api/seed', { method: 'POST' }).then(r => r.json()).then(console.log)
+  ```
+- Penjelasan struktur collections yang akan muncul: `users`, `employees`, `leaverequests`
+
+---
+
+### Prompt 29
+> *"Pada bagian form add employee, ada form email dan password. Email optional, tapi tambahkan satu field untuk username. Login akan menggunakan username. Password itu required dan tidak boleh kosong."*
+
+**Aksi yang dilakukan:**
+
+**Perubahan pada 8+ file:**
+- `src/types/index.ts` — Tambah `username: string`, `password` jadi required (bukan optional)
+- `src/models/Employee.ts` — Tambah field `username` (required, unique, lowercase, trimmed)
+- `src/validators/employee-validator.ts` — Tambah validasi `username` (min 3 chars, no spaces), `password` wajib pada create, opsional pada edit
+- `src/components/employee/EmployeeForm.tsx` — Tambah field **Username**, password label menyesuaikan mode (create vs edit)
+- `src/components/employee/EmployeeTable.tsx` — Tambah kolom **Username** di tabel
+- `src/app/api/employees/route.ts` — POST: buat **User account** (bcrypt hash) saat create employee, cek username unik
+- `src/app/api/employees/[id]/route.ts` — PUT: sync username/password ke User collection, DELETE: hapus User juga
+- `src/app/register/page.tsx` — Ganti email → **username** sebagai identitas utama, email jadi optional
+- `src/app/employees/edit/[id]/page.tsx` — Fix TypeScript error: tambah `username` dan `password` ke `setInitialData`
+
+**Alur login employee:**
+1. Admin tambah employee → isi username + password → otomatis buat akun User
+2. Employee login dengan username + password
+3. Saat edit, password boleh kosong (tidak mengubah password lama)
+
+---
+
+### Prompt 30
+> *"Sebelum lanjut, apakah prompt yang telah saya ketik ini sudah tersimpan di PROMPT_HISTORY.md? Dan setelah saya mau deploy, muncul error TypeScript: username, password missing"*
+
+**Masalah:**
+- `PROMPT_HISTORY.md` belum diupdate dengan prompt dari sesi Antigravity ini
+- Build error di `employees/edit/[id]/page.tsx`: `setInitialData` tidak menyertakan field `username` dan `password` yang sekarang required
+
+**Aksi yang dilakukan:**
+- Fix TypeScript error: tambah `username`, `email`, `password` ke `setInitialData` di edit page
+- Buat dua schema terpisah: `employeeSchema` (create, password required) dan `employeeEditSchema` (edit, password optional)
+- Update `EmployeeForm.tsx`: gunakan schema sesuai mode, password label menunjukkan "(Leave blank to keep current)" saat edit
+- Update `PROMPT_HISTORY.md` dengan seluruh prompt dari Sesi 4 (Prompt 20–30)
+
