@@ -2,24 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { LeaveRequest } from "@/models/LeaveRequest";
 import { Employee } from "@/models/Employee";
+import { countBusinessDays } from "@/lib/holidays";
 
 type Params = { params: Promise<{ id: string }> };
 
 /**
- * Calculate number of business days between two dates (inclusive).
+ * countDays uses the shared countBusinessDays utility that excludes
+ * both weekends and Indonesian public holidays.
  */
-function countDays(startDate: string, endDate: string): number {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  let count = 0;
-  const current = new Date(start);
-  while (current <= end) {
-    const day = current.getDay();
-    if (day !== 0 && day !== 6) count++; // Skip weekends
-    current.setDate(current.getDate() + 1);
-  }
-  return count || 1; // At least 1 day
-}
+const countDays = countBusinessDays;
 
 // PATCH /api/leave/[id] — approve, check, or reject
 export async function PATCH(req: NextRequest, { params }: Params) {

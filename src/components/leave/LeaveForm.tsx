@@ -8,7 +8,6 @@ import { EmployeeStorageService } from "@/services/employee-storage";
 import { Employee } from "@/types";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -19,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { BusinessDatePicker, BusinessDayCount } from "@/components/ui/business-date-picker";
+import { countBusinessDays } from "@/lib/holidays";
 import { Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { AuthSession } from "@/types";
@@ -68,27 +69,23 @@ export function LeaveForm({ onSubmit, isSubmitting = false }: LeaveFormProps) {
     loadData();
   }, [setValue]);
 
-  const calculateDays = (start: string, end: string) => {
-    const s = new Date(start);
-    const e = new Date(end);
-    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
-    return Math.ceil(Math.abs(e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  };
-
   const handleFormSubmit = (data: LeaveRequestFormData) => {
     if (data.type === "ANNUAL") {
       const selectedEmp = employees.find((e) => e.id === data.employeeId);
       const balance = selectedEmp?.leaveBalance ?? 12;
-      const daysRequested = calculateDays(data.startDate, data.endDate);
+      const daysRequested = countBusinessDays(data.startDate, data.endDate);
       if (daysRequested > balance) {
         toast.error(
-          `Insufficient balance. You have ${balance} days left but requested ${daysRequested} days.`
+          `Insufficient balance. You have ${balance} days left but requested ${daysRequested} business days.`
         );
         return;
       }
     }
     onSubmit(data);
   };
+
+  const watchedStartDate = watch("startDate");
+  const watchedEndDate = watch("endDate");
 
   // Eligible approvers based on current employee's position
   const currentEmpPosition = employees.find(
@@ -264,11 +261,18 @@ export function LeaveForm({ onSubmit, isSubmitting = false }: LeaveFormProps) {
                 <Label htmlFor="startDate" className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Start Date
                 </Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  {...register("startDate")}
-                  className={errors.startDate ? "border-destructive" : "border-slate-200"}
+                <Controller
+                  name="startDate"
+                  control={control}
+                  render={({ field }) => (
+                    <BusinessDatePicker
+                      id="startDate"
+                      value={field.value}
+                      onChange={(v) => field.onChange(v)}
+                      placeholder="Select start date"
+                      error={!!errors.startDate}
+                    />
+                  )}
                 />
                 {errors.startDate && (
                   <p className="text-xs text-destructive">{errors.startDate.message}</p>
@@ -278,17 +282,27 @@ export function LeaveForm({ onSubmit, isSubmitting = false }: LeaveFormProps) {
                 <Label htmlFor="endDate" className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   End Date
                 </Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  {...register("endDate")}
-                  className={errors.endDate ? "border-destructive" : "border-slate-200"}
+                <Controller
+                  name="endDate"
+                  control={control}
+                  render={({ field }) => (
+                    <BusinessDatePicker
+                      id="endDate"
+                      value={field.value}
+                      onChange={(v) => field.onChange(v)}
+                      placeholder="Select end date"
+                      error={!!errors.endDate}
+                    />
+                  )}
                 />
                 {errors.endDate && (
                   <p className="text-xs text-destructive">{errors.endDate.message}</p>
                 )}
               </div>
             </div>
+
+            {/* Business Day Count */}
+            <BusinessDayCount startDate={watchedStartDate} endDate={watchedEndDate} />
 
             {/* Reason */}
             <div className="space-y-2">
