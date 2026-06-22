@@ -22,7 +22,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [session, setSession] = useState<AuthSession | null>(null);
-  const [isApproverOnly, setIsApproverOnly] = useState(false);
+  const [employeePosition, setEmployeePosition] = useState("");
 
   useEffect(() => {
     async function loadSession() {
@@ -30,9 +30,7 @@ export function Navbar() {
       setSession(s);
       if (s?.role === "EMPLOYEE" && s.employeeId) {
         const emp = await EmployeeStorageService.getById(s.employeeId);
-        if (emp && ["Manager", "Director", "Senior Staff"].includes(emp.position)) {
-          setIsApproverOnly(true);
-        }
+        if (emp) setEmployeePosition(emp.position);
       }
     }
     loadSession();
@@ -49,6 +47,8 @@ export function Navbar() {
     return pathname.startsWith(href);
   };
 
+  const isApprover = ["Manager", "Director", "Senior Staff"].includes(employeePosition);
+
   const getNavItems = () => {
     const base = [
       {
@@ -61,18 +61,22 @@ export function Navbar() {
       base.push({ href: "/employees", label: "Employees", icon: Users });
       base.push({ href: "/leave", label: "All Leave Requests", icon: CalendarDays });
     } else if (session?.role === "EMPLOYEE") {
-      if (isApproverOnly) {
-        // Senior Staff / Manager / Director: 3 menus
+      if (isApprover) {
+        // All approvers see Leave Approvals
         base.push({
           href: "/leave",
           label: "Leave Approvals",
           icon: CalendarDays,
         });
-        base.push({
-          href: "/leave/my",
-          label: "Leave Requests",
-          icon: FileCode2,
-        });
+        // Only Senior Staff gets Leave Requests (own requests)
+        // Manager/Director only approve, no own leave requests
+        if (["Senior Staff", "Junior Staff", "Intern"].includes(employeePosition)) {
+          base.push({
+            href: employeePosition === "Senior Staff" ? "/leave/my" : "/leave",
+            label: "Leave Requests",
+            icon: FileCode2,
+          });
+        }
       } else {
         // Junior Staff / Intern: only Leave Requests
         base.push({
