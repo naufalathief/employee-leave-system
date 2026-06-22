@@ -7,6 +7,7 @@ export interface IEmployee extends Document {
   department: string;
   position: string;
   leaveBalance: number;
+  leaveBalanceResetAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,7 +19,8 @@ const EmployeeSchema = new Schema<IEmployee>(
     email: { type: String, trim: true, lowercase: true, default: "" },
     department: { type: String, required: true, trim: true },
     position: { type: String, required: true, trim: true },
-    leaveBalance: { type: Number, default: 12 },
+    leaveBalance: { type: Number, default: 12, min: 0, max: 12 },
+    leaveBalanceResetAt: { type: Date, default: () => new Date() },
   },
   { timestamps: true }
 );

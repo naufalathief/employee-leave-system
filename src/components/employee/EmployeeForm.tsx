@@ -182,11 +182,12 @@ export function EmployeeForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="leaveBalance">Annual Leave Balance</Label>
+              <Label htmlFor="leaveBalance">Annual Leave Balance (max 12)</Label>
               <Input
                 id="leaveBalance"
                 type="number"
                 min="0"
+                max="12"
                 placeholder="12"
                 {...register("leaveBalance", { valueAsNumber: true })}
                 className={errors.leaveBalance ? "border-destructive" : ""}

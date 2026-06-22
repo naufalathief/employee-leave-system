@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { LeaveRequest } from "@/models/LeaveRequest";
+import { Employee } from "@/models/Employee";
 
 type Params = { params: Promise<{ id: string }> };
+
+/**
+ * Calculate number of business days between two dates (inclusive).
+ */
+function countDays(startDate: string, endDate: string): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  let count = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) count++; // Skip weekends
+    current.setDate(current.getDate() + 1);
+  }
+  return count || 1; // At least 1 day
+}
 
 // PATCH /api/leave/[id] — approve or reject
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -15,15 +32,47 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     await connectDB();
-    const leave = await LeaveRequest.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    ).lean();
 
+    const leave = await LeaveRequest.findById(id);
     if (!leave) {
       return NextResponse.json({ error: "Leave request not found" }, { status: 404 });
     }
+
+    const previousStatus = leave.status;
+
+    // If approving ANNUAL leave, check and deduct balance
+    if (status === "APPROVED" && leave.type === "ANNUAL" && previousStatus !== "APPROVED") {
+      const employee = await Employee.findById(leave.employeeId);
+      if (!employee) {
+        return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+      }
+
+      const days = countDays(leave.startDate, leave.endDate);
+
+      if (employee.leaveBalance < days) {
+        return NextResponse.json(
+          { error: `Insufficient leave balance. Required: ${days} days, Available: ${employee.leaveBalance} days` },
+          { status: 400 }
+        );
+      }
+
+      // Deduct balance
+      employee.leaveBalance -= days;
+      await employee.save();
+    }
+
+    // If reverting from APPROVED to another status for ANNUAL leave, restore balance
+    if (previousStatus === "APPROVED" && status !== "APPROVED" && leave.type === "ANNUAL") {
+      const employee = await Employee.findById(leave.employeeId);
+      if (employee) {
+        const days = countDays(leave.startDate, leave.endDate);
+        employee.leaveBalance = Math.min(employee.leaveBalance + days, 12);
+        await employee.save();
+      }
+    }
+
+    leave.status = status;
+    await leave.save();
 
     return NextResponse.json({
       leave: {
@@ -48,11 +97,23 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     await connectDB();
-    const leave = await LeaveRequest.findByIdAndDelete(id);
 
+    const leave = await LeaveRequest.findById(id);
     if (!leave) {
       return NextResponse.json({ error: "Leave request not found" }, { status: 404 });
     }
+
+    // If deleting an approved ANNUAL leave, restore balance
+    if (leave.status === "APPROVED" && leave.type === "ANNUAL") {
+      const employee = await Employee.findById(leave.employeeId);
+      if (employee) {
+        const days = countDays(leave.startDate, leave.endDate);
+        employee.leaveBalance = Math.min(employee.leaveBalance + days, 12);
+        await employee.save();
+      }
+    }
+
+    await LeaveRequest.findByIdAndDelete(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

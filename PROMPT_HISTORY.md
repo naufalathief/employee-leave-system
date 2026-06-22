@@ -509,3 +509,31 @@ npm run dev
 - Update `EmployeeForm.tsx`: gunakan schema sesuai mode, password label menunjukkan "(Leave blank to keep current)" saat edit
 - Update `PROMPT_HISTORY.md` dengan seluruh prompt dari Sesi 4 (Prompt 20–30)
 
+---
+
+### Prompt 31
+> *"Passwordnya itu currentnya apa? Validasi Annual Leave Balance tidak ada. Tambahkan: Maksimum 12, Minimum 0, dan setiap tahun reset kuota."*
+
+**Aksi yang dilakukan:**
+
+**Validasi Leave Balance:**
+- `src/validators/employee-validator.ts` — Tambah `.max(12, "Maximum annual leave balance is 12")` pada `leaveBalance`
+- `src/models/Employee.ts` — Tambah `min: 0, max: 12` pada schema Mongoose, tambah field `leaveBalanceResetAt` untuk tracking kapan terakhir reset
+- `src/components/employee/EmployeeForm.tsx` — Input `max="12"`, label menampilkan "(max 12)"
+
+**Deduction saat Approve:**
+- `src/app/api/leave/[id]/route.ts` — Logika baru:
+  - Saat approve ANNUAL leave → hitung jumlah hari kerja → cek apakah saldo cukup → deduct balance
+  - Jika saldo tidak cukup → tolak dengan pesan error
+  - Saat revert/reject ANNUAL leave yang sudah approved → restore balance (capped 12)
+  - Saat delete ANNUAL leave yang approved → restore balance (capped 12)
+
+**Annual Reset:**
+- `src/app/api/leave/reset/route.ts` — Endpoint baru `POST /api/leave/reset`:
+  - Reset semua employee ke 12 hari jika `leaveBalanceResetAt` < tahun ini
+  - Support `CRON_SECRET` untuk keamanan
+- `vercel.json` — Cron job Vercel: `0 0 1 1 *` (1 Januari setiap tahun, 00:00 UTC)
+
+**Jawaban pertanyaan password:**
+- Admin: `admin123` (dari seed)
+- Employee: password yang diset admin saat create employee
