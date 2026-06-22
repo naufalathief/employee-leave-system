@@ -114,8 +114,7 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
         onClick={onClick}
         title={label}
         className={[
-          "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150",
-          collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5",
+          "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150 px-3 py-2.5",
           active
             ? "bg-[#1e293b] text-white shadow-sm"
             : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
@@ -206,9 +205,7 @@ export function Navbar({ collapsed = false, onToggleCollapse }: NavbarProps) {
           <button
             onClick={handleLogout}
             title="Logout"
-            className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors duration-150 ${
-              collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
-            }`}
+            className="w-full flex items-center gap-3 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors duration-150 px-3 py-2.5"
           >
             <LogOut className="h-4 w-4 shrink-0" />
             <span
