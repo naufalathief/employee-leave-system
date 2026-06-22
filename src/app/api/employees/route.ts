@@ -53,6 +53,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Username already exists" }, { status: 409 });
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create employee
     const employee = await Employee.create({
       name,
@@ -64,13 +67,22 @@ export async function POST(req: NextRequest) {
     });
 
     // Create user account for employee login
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({
-      username: username.toLowerCase().trim(),
-      password: hashedPassword,
-      role: "EMPLOYEE",
-      employeeId: employee._id.toString(),
-    });
+    try {
+      await User.create({
+        username: username.toLowerCase().trim(),
+        password: hashedPassword,
+        role: "EMPLOYEE",
+        employeeId: employee._id.toString(),
+      });
+    } catch (userError) {
+      // If user creation fails, rollback the employee
+      await Employee.findByIdAndDelete(employee._id);
+      console.error("[POST /api/employees] User creation failed:", userError);
+      return NextResponse.json(
+        { error: "Failed to create user account for employee" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       employee: {

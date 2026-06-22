@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
+import { Employee } from "@/models/Employee";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
@@ -16,14 +17,34 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findOne({ username: username.toLowerCase().trim() });
+    let user = await User.findOne({ username: username.toLowerCase().trim() });
+
+    // If no User found, check if there's an Employee with this username
+    // that doesn't have a User account yet (created before User-creation logic)
     if (!user) {
+      const employee = await Employee.findOne({ username: username.toLowerCase().trim() });
+      if (employee) {
+        // No user account exists for this employee — auth fails
+        return NextResponse.json(
+          { error: "No login account found for this employee. Please contact admin to reset your account." },
+          { status: 401 }
+        );
+      }
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // If user is EMPLOYEE but employeeId is missing, try to find and link
+    if (user.role === "EMPLOYEE" && !user.employeeId) {
+      const employee = await Employee.findOne({ username: user.username });
+      if (employee) {
+        user.employeeId = employee._id.toString();
+        await user.save();
+      }
     }
 
     const token = await new SignJWT({

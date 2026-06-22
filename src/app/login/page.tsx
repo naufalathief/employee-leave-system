@@ -45,12 +45,12 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
-    const session = await AuthStorageService.login(data.username, data.password);
-    if (session) {
+    const result = await AuthStorageService.login(data.username, data.password);
+    if (result.session) {
       toast.success("Login successful! Redirecting…");
       router.push("/dashboard");
     } else {
-      toast.error("Invalid username or password");
+      toast.error(result.error ?? "Invalid username or password");
       setIsSubmitting(false);
     }
   };

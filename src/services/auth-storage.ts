@@ -1,7 +1,7 @@
 import { AuthSession } from "@/types";
 
 export const AuthStorageService = {
-  async login(usernameOrEmail: string, password: string): Promise<AuthSession | null> {
+  async login(usernameOrEmail: string, password: string): Promise<{ session: AuthSession | null; error?: string }> {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -9,11 +9,11 @@ export const AuthStorageService = {
         body: JSON.stringify({ username: usernameOrEmail, password }),
       });
 
-      if (!res.ok) return null;
       const data = await res.json();
-      return data.session ?? null;
+      if (!res.ok) return { session: null, error: data.error ?? "Login failed" };
+      return { session: data.session ?? null };
     } catch {
-      return null;
+      return { session: null, error: "Network error. Please try again." };
     }
   },
 
