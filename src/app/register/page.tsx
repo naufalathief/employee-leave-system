@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmployeeStorageService } from "@/services/employee-storage";
-import { Employee } from "@/types";
 import { toast } from "sonner";
 import { LogIn } from "lucide-react";
 import Link from "next/link";
@@ -55,7 +54,7 @@ export default function RegisterPage() {
         return;
       }
 
-      const newEmployee: Omit<Employee, "id"> = {
+      const newEmployee = {
         name: formData.name,
         username: formData.username,
         email: formData.email,

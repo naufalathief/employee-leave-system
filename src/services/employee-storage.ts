@@ -23,7 +23,7 @@ export const EmployeeStorageService = {
     }
   },
 
-  async create(employeeData: Omit<Employee, "id">): Promise<Employee> {
+  async create(employeeData: Omit<Employee, "id"> & { password?: string }): Promise<Employee> {
     const res = await fetch("/api/employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,7 +37,7 @@ export const EmployeeStorageService = {
     return data.employee;
   },
 
-  async update(id: string, employeeData: Omit<Employee, "id">): Promise<Employee | null> {
+  async update(id: string, employeeData: Omit<Employee, "id"> & { password?: string }): Promise<Employee | null> {
     try {
       const res = await fetch(`/api/employees/${id}`, {
         method: "PUT",
