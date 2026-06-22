@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/mongodb";
 import { Employee } from "@/models/Employee";
 import { User } from "@/models/User";
 
+export const dynamic = "force-dynamic";
+
 type Params = { params: Promise<{ id: string }> };
 
 // GET /api/employees/[id]
@@ -58,11 +60,22 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
 
     // Update employee
+    console.log("[PUT /api/employees/[id]] Updating employee:", id, "with data:", {
+      name,
+      username: username?.toLowerCase().trim(),
+      email,
+      department,
+      position,
+      leaveBalance,
+    });
+
     const employee = await Employee.findByIdAndUpdate(
       id,
       { name, username: username?.toLowerCase().trim(), email, department, position, leaveBalance },
       { new: true, runValidators: true }
     ).lean();
+
+    console.log("[PUT /api/employees/[id]] Update result in db:", employee);
 
     if (!employee) {
       return NextResponse.json({ error: "Employee not found" }, { status: 404 });

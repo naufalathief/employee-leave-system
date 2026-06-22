@@ -4,6 +4,8 @@ import { LeaveRequest } from "@/models/LeaveRequest";
 import { Employee } from "@/models/Employee";
 import { countBusinessDays } from "@/lib/holidays";
 
+export const dynamic = "force-dynamic";
+
 type Params = { params: Promise<{ id: string }> };
 
 /**

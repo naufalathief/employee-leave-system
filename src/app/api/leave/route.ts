@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { LeaveRequest } from "@/models/LeaveRequest";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/leave — list all leave requests (optionally filtered by employeeId)
 export async function GET(req: NextRequest) {
   try {
