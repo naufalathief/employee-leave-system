@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { LeaveRequest, Employee } from "@/types";
 import { EmployeeStorageService } from "@/services/employee-storage";
 import { formatDate, statusColors } from "@/lib/formatters";
@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, CalendarDays, ArrowRight } from "lucide-react";
+import { CheckCircle2, XCircle, CalendarDays, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 
 interface LeaveTableProps {
   leaveRequests: LeaveRequest[];
@@ -45,6 +45,7 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [session, setSession] = useState<any>(null);
   const [selectedManagerId, setSelectedManagerId] = useState<Record<string, string>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function loadData() {
@@ -117,24 +118,44 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
     );
   }
 
+  const toggleRow = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   return (
-    <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+    <div className="border rounded-lg overflow-hidden bg-card shadow-sm overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50 border-b hover:bg-muted/50">
+            <TableHead className="font-semibold text-foreground w-8"></TableHead>
             <TableHead className="font-semibold text-foreground">Employee</TableHead>
             <TableHead className="font-semibold text-foreground">Type</TableHead>
             <TableHead className="font-semibold text-foreground">Approver</TableHead>
             <TableHead className="font-semibold text-foreground">Start Date</TableHead>
             <TableHead className="font-semibold text-foreground">End Date</TableHead>
-            <TableHead className="font-semibold hidden md:table-cell text-foreground">Reason</TableHead>
             <TableHead className="font-semibold text-foreground">Status</TableHead>
             {showActionsColumn && <TableHead className="font-semibold text-right text-foreground">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {leaveRequests.map((request) => (
-            <TableRow key={request.id} className="hover:bg-muted/30 border-b transition-colors">
+            <React.Fragment key={request.id}>
+            <TableRow
+              className="hover:bg-muted/30 border-b transition-colors cursor-pointer"
+              onClick={() => toggleRow(request.id)}
+            >
+              <TableCell className="w-8 px-2">
+                {expandedRows.has(request.id) ? (
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-slate-400" />
+                )}
+              </TableCell>
               <TableCell className="font-medium">
                 {getEmployeeName(request.employeeId)}
               </TableCell>
@@ -155,9 +176,6 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
               </TableCell>
               <TableCell className="text-muted-foreground">{formatDate(request.startDate)}</TableCell>
               <TableCell className="text-muted-foreground">{formatDate(request.endDate)}</TableCell>
-              <TableCell className="hidden md:table-cell max-w-[200px] truncate text-muted-foreground">
-                {request.reason}
-              </TableCell>
               <TableCell>
                 <Badge
                   variant="outline"
@@ -167,7 +185,7 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
                 </Badge>
               </TableCell>
               {showActionsColumn && (
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   {canActOn(request) ? (
                     <div className="flex items-center justify-end gap-1">
                       {/* Senior Staff: show forward-to-manager flow */}
@@ -313,6 +331,19 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
                 </TableCell>
               )}
             </TableRow>
+            {expandedRows.has(request.id) && (
+              <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
+                <TableCell colSpan={showActionsColumn ? 8 : 7} className="py-3 px-4">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Reason</span>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                      {request.reason || "—"}
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>
