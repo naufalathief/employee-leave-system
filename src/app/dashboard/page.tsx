@@ -19,6 +19,7 @@ export default function DashboardPage() {
   });
 
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [employeePosition, setEmployeePosition] = useState<string>("");
 
   useEffect(() => {
     async function loadData() {
@@ -35,8 +36,9 @@ export default function DashboardPage() {
       let balance = 12;
       if (currentSession?.role === "EMPLOYEE" && currentSession?.employeeId) {
         const emp = employees.find((e) => e.id === currentSession.employeeId);
-        if (emp && emp.leaveBalance !== undefined) {
-          balance = emp.leaveBalance;
+        if (emp) {
+          if (emp.leaveBalance !== undefined) balance = emp.leaveBalance;
+          setEmployeePosition(emp.position);
         }
       }
 
@@ -51,6 +53,11 @@ export default function DashboardPage() {
 
     loadData();
   }, []);
+
+  // Hide leave balance for Manager/Director (they focus on approvals)
+  const showLeaveBalance =
+    session?.role === "EMPLOYEE" &&
+    !["Manager", "Director"].includes(employeePosition);
 
   return (
     <AppLayout>
@@ -76,7 +83,7 @@ export default function DashboardPage() {
               variant="default"
             />
           )}
-          {session?.role === "EMPLOYEE" && (
+          {showLeaveBalance && (
             <StatCard
               title="Annual Leave Balance"
               value={stats.leaveBalance || 0}
@@ -111,3 +118,4 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+

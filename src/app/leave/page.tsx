@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/shared/AppLayout";
 import { LeaveTable } from "@/components/leave/LeaveTable";
 import { useLeaveRequests } from "@/hooks/use-leave-requests";
-import { buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,10 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { buttonVariants } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { AuthStorageService } from "@/services/auth-storage";
-import { EmployeeStorageService } from "@/services/employee-storage";
 
 const STATUS_OPTIONS = [
   { value: "ALL", label: "All Status" },
@@ -33,22 +30,13 @@ export default function LeavePage() {
     approveRequest,
     rejectRequest,
     currentEmployee,
+    session,
   } = useLeaveRequests();
 
-  const [isApproverOnly, setIsApproverOnly] = useState(false);
-
-  useEffect(() => {
-    async function checkRole() {
-      const session = await AuthStorageService.getSession();
-      if (session?.role === "EMPLOYEE" && session?.employeeId) {
-        const emp = await EmployeeStorageService.getById(session.employeeId);
-        if (emp && ["Manager", "Director", "Senior Staff"].includes(emp.position)) {
-          setIsApproverOnly(true);
-        }
-      }
-    }
-    checkRole();
-  }, []);
+  const isAdmin = session?.role === "ADMIN";
+  const isApprover = currentEmployee
+    ? ["Manager", "Director", "Senior Staff"].includes(currentEmployee.position)
+    : false;
 
   return (
     <AppLayout>
@@ -56,15 +44,18 @@ export default function LeavePage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-100">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#0f172a]">
-              {isApproverOnly ? "Leave Approvals" : "Leave Requests"}
+              {isAdmin ? "All Leave Requests" : isApprover ? "Leave Approvals" : "Leave Requests"}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              {isApproverOnly
-                ? "Review and approve employee leave requests"
-                : "Manage and review employee leave requests"}
+              {isAdmin
+                ? "Manage and review all employee leave requests"
+                : isApprover
+                  ? "Review and approve employee leave requests"
+                  : "Submit and track your leave requests"}
             </p>
           </div>
-          {!isApproverOnly && (
+          {/* Show New Request button only for non-approver employees and admin */}
+          {(isAdmin || !isApprover) && (
             <Link
               href="/leave/new"
               className={buttonVariants({ className: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all" })}

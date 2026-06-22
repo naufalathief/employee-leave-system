@@ -43,7 +43,11 @@ export function Navbar() {
     router.replace("/login");
   };
 
-  const isActive = (href: string) => pathname.startsWith(href);
+  const isActive = (href: string) => {
+    if (href === "/leave/my") return pathname === "/leave/my" || pathname === "/leave/new";
+    if (href === "/leave") return pathname === "/leave" && !pathname.startsWith("/leave/my");
+    return pathname.startsWith(href);
+  };
 
   const getNavItems = () => {
     const base = [
@@ -57,11 +61,26 @@ export function Navbar() {
       base.push({ href: "/employees", label: "Employees", icon: Users });
       base.push({ href: "/leave", label: "All Leave Requests", icon: CalendarDays });
     } else if (session?.role === "EMPLOYEE") {
-      base.push({
-        href: "/leave",
-        label: isApproverOnly ? "Leave Approvals" : "Leave Requests",
-        icon: CalendarDays,
-      });
+      if (isApproverOnly) {
+        // Senior Staff / Manager / Director: 3 menus
+        base.push({
+          href: "/leave",
+          label: "Leave Approvals",
+          icon: CalendarDays,
+        });
+        base.push({
+          href: "/leave/my",
+          label: "Leave Requests",
+          icon: FileCode2,
+        });
+      } else {
+        // Junior Staff / Intern: only Leave Requests
+        base.push({
+          href: "/leave",
+          label: "Leave Requests",
+          icon: CalendarDays,
+        });
+      }
     }
     return base;
   };
