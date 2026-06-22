@@ -72,15 +72,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         });
       }
 
-      // Everyone else → full APPROVED (Manager, Director, Admin, or fallback)
-      // Deduct ANNUAL leave balance
+      // Everyone else → full APPROVED
+      // Deduct ANNUAL leave balance using atomic $inc
       if (leave.type === "ANNUAL" && previousStatus !== "APPROVED") {
+        const days = countDays(leave.startDate, leave.endDate);
+        console.log(`[APPROVAL] Deducting ${days} days from employee ${leave.employeeId}, leave type: ${leave.type}`);
+
+        // First check current balance
         const employee = await Employee.findById(leave.employeeId);
         if (!employee) {
+          console.error(`[APPROVAL] Employee not found: ${leave.employeeId}`);
           return NextResponse.json({ error: "Employee not found" }, { status: 404 });
         }
 
-        const days = countDays(leave.startDate, leave.endDate);
+        console.log(`[APPROVAL] Current balance: ${employee.leaveBalance}, days to deduct: ${days}`);
 
         if (employee.leaveBalance < days) {
           return NextResponse.json(
@@ -89,8 +94,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           );
         }
 
-        employee.leaveBalance -= days;
-        await employee.save();
+        // Use atomic $inc to guarantee the write happens
+        const updatedEmployee = await Employee.findByIdAndUpdate(
+          leave.employeeId,
+          { $inc: { leaveBalance: -days } },
+          { new: true, runValidators: false }
+        );
+
+        console.log(`[APPROVAL] Balance after deduction: ${updatedEmployee?.leaveBalance}`);
       }
 
       leave.status = "APPROVED";
@@ -115,25 +126,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // --- REJECTION ---
     if (status === "REJECTED") {
-      // If reverting from APPROVED for ANNUAL leave, restore balance
       if (previousStatus === "APPROVED" && leave.type === "ANNUAL") {
-        const employee = await Employee.findById(leave.employeeId);
-        if (employee) {
-          const days = countDays(leave.startDate, leave.endDate);
-          employee.leaveBalance = Math.min(employee.leaveBalance + days, 12);
-          await employee.save();
-        }
+        const days = countDays(leave.startDate, leave.endDate);
+        await Employee.findByIdAndUpdate(
+          leave.employeeId,
+          { $inc: { leaveBalance: days } },
+          { runValidators: false }
+        );
+        console.log(`[REJECTION] Restored ${days} days to employee ${leave.employeeId}`);
       }
     }
 
     // If reverting from APPROVED to PENDING for ANNUAL leave, restore balance
     if (previousStatus === "APPROVED" && status === "PENDING" && leave.type === "ANNUAL") {
-      const employee = await Employee.findById(leave.employeeId);
-      if (employee) {
-        const days = countDays(leave.startDate, leave.endDate);
-        employee.leaveBalance = Math.min(employee.leaveBalance + days, 12);
-        await employee.save();
-      }
+      const days = countDays(leave.startDate, leave.endDate);
+      await Employee.findByIdAndUpdate(
+        leave.employeeId,
+        { $inc: { leaveBalance: days } },
+        { runValidators: false }
+      );
+      console.log(`[REVERT] Restored ${days} days to employee ${leave.employeeId}`);
     }
 
     leave.status = status;
@@ -172,12 +184,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
     // If deleting an approved ANNUAL leave, restore balance
     if (leave.status === "APPROVED" && leave.type === "ANNUAL") {
-      const employee = await Employee.findById(leave.employeeId);
-      if (employee) {
-        const days = countDays(leave.startDate, leave.endDate);
-        employee.leaveBalance = Math.min(employee.leaveBalance + days, 12);
-        await employee.save();
-      }
+      const days = countDays(leave.startDate, leave.endDate);
+      await Employee.findByIdAndUpdate(
+        leave.employeeId,
+        { $inc: { leaveBalance: days } },
+        { runValidators: false }
+      );
     }
 
     await LeaveRequest.findByIdAndDelete(id);
