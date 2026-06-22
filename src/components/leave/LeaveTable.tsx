@@ -176,7 +176,7 @@ export function LeaveTable({ leaveRequests, onApprove, onReject, currentEmployee
                           <Select
                             value={selectedManagerId[request.id] ?? ""}
                             onValueChange={(v) =>
-                              setSelectedManagerId((prev) => ({ ...prev, [request.id]: v }))
+                              setSelectedManagerId((prev) => ({ ...prev, [request.id]: v ?? "" }))
                             }
                           >
                             <SelectTrigger className="w-[130px] h-8 text-xs">
